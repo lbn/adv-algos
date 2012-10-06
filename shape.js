@@ -36,5 +36,5 @@ Shape.prototype.check = function check(node) {
 }
 
 
-var a = new Shape([{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:4,y:3},{x:4,y:6},{x:3,y:10}]);
-console.log(a.check({x:1,y:1}));
+//var a = new Shape([{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:4,y:3},{x:4,y:6},{x:3,y:10}]);
+//console.log(a.check({x:1,y:1}));
