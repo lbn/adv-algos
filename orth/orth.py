@@ -60,7 +60,7 @@ class OrthTree(object):
     3) for each node on the path the offpath subtree is all or nothing
     """
     def lookup(self,x1,x2):
-        print((x1,x2))
+        #print((x1,x2))
         def find_split(t1,t2):
             return max(set(t1.path())&set(t2.path()),key=lambda t:t.depth)
 
@@ -77,17 +77,21 @@ class OrthTree(object):
                 return []
             nums = []
             if tree.left is not None and f(tree.left.this):
+                #print("left")
                 for n in tree.left.to_list():
                     nums.append(n)
             if tree.right is not None and f(tree.right.this):
+                #print("right")
                 for n in tree.right.to_list():
                     nums.append(n)
             off = None
             while True:
                 if f(tree.this):
+                    #print("this")
                     nums.append(tree.this)
                 if off is not None and f(off.this):
                     for n in off.to_list():
+                        #print("off")
                         nums.append(n)
                 tree_old = tree
                 tree = tree.parent    
@@ -96,14 +100,21 @@ class OrthTree(object):
                 off = find_offpath(tree,tree_old)
             return nums
         x1s, x2p = OrthTree.successor(self.tree,x1),OrthTree.predecessor(self.tree,x2)
-        print(list(x1s.path()))
-        print(list(x2p.path()))
+        #print(list(x1s.path()))
+        #print(list(x2p.path()))
         split = find_split(x1s,x2p) 
         #print(split)
 
-        nums = filter_offpath(split,x1s,lambda n: n>=x1)+[split.this]+filter_offpath(split,x2p,lambda n: n<=x2)
-        print(nums)
-        return nums
+        f = lambda n: n>=x1 and n<=x2
+        nums = filter_offpath(split,x1s,f)
+        if f(split.this):
+            nums = nums+[split.this]
+        nums = nums+filter_offpath(split,x2p,f)
+        #print(nums)
+        
+        # workaround
+        #return nums
+        return sorted(nums)
 
     @staticmethod
     def successor(tree,x):
@@ -218,8 +229,8 @@ def test_lookup(IOrth):
     for i in range(1,x_max-x_step):
         for j in range(i,x_max-x_step):
             check_ij(i,j)
-        for j in range(0,i):
-            check_ij(i,j)
+        #for j in range(0,i):
+            #check_ij(i,j)
 
 
 
