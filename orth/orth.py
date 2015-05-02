@@ -51,6 +51,62 @@ class OrthTree(object):
     """docstring for OrthTree"""
     def __init__(self, arr):
         self.tree = Tree(arr)
+    def count(self,x1,x2):
+        def get_tsum(split,tree,f):
+            if tree is split:
+                return 0
+            #nums = []
+            tsum = 0
+
+            if tree.left is not None and f(tree.left.this):
+                tsum += tree.left.ssum
+            if tree.right is not None and f(tree.right.this):
+                tsum += tree.right.ssum
+            off = None
+            while True:
+                if f(tree.this):
+                    tsum += tree.this
+                    #pass
+                    #print("this")
+                    #nums.append(tree.this)
+                if off is not None and f(off.this):
+                    tsum += off.ssum
+                tree_old = tree
+                tree = tree.parent    
+                if tree is split:
+                    break
+                off = OrthTree.find_offpath(tree,tree_old)
+            return tsum
+        f = lambda n: n>=x1 and n<=x2
+
+        x1s, x2p = OrthTree.successor(self.tree,x1),OrthTree.predecessor(self.tree,x2)
+        split = OrthTree.find_split(x1s,x2p) 
+        #print(list(x1s.path()))
+        #print(list(x2p.path()))
+        #print(split)
+        nums = self.lookup(x1,x2)
+
+
+        ts = 0
+        ts_x1 = get_tsum(split,x1s,f)
+        ts_x2 = get_tsum(split,x2p,f)
+        ts += ts_x1
+        if f(split.this):
+            ts += split.this
+        ts += ts_x2
+        return ts
+
+    @staticmethod
+    def find_split(t1,t2):
+        return max(set(t1.path())&set(t2.path()),key=lambda t:t.depth)
+    @staticmethod
+    def find_offpath(parent,child):
+        if parent.right is child:
+            return parent.left
+        elif parent.left is child:
+            return parent.right
+        else:
+            return None
     """
     Lookup using the balanced tree 
     
@@ -61,16 +117,7 @@ class OrthTree(object):
     """
     def lookup(self,x1,x2):
         #print((x1,x2))
-        def find_split(t1,t2):
-            return max(set(t1.path())&set(t2.path()),key=lambda t:t.depth)
 
-        def find_offpath(parent,child):
-            if parent.right is child:
-                return parent.left
-            elif parent.left is child:
-                return parent.right
-            else:
-                return None
 
         def filter_offpath(split,tree,f):
             if tree is split:
@@ -97,12 +144,12 @@ class OrthTree(object):
                 tree = tree.parent    
                 if tree is split:
                     break
-                off = find_offpath(tree,tree_old)
+                off = OrthTree.find_offpath(tree,tree_old)
             return nums
         x1s, x2p = OrthTree.successor(self.tree,x1),OrthTree.predecessor(self.tree,x2)
         #print(list(x1s.path()))
         #print(list(x2p.path()))
-        split = find_split(x1s,x2p) 
+        split = OrthTree.find_split(x1s,x2p) 
         #print(split)
 
         f = lambda n: n>=x1 and n<=x2
@@ -176,6 +223,12 @@ class Tree(object):
             self.right = Tree(arr[mid_i+1:],parent=self)
         else:
             self.right = None
+
+        self.ssum = self.this
+        if self.left is not None:
+            self.ssum += self.left.ssum
+        if self.right is not None:
+            self.ssum += self.right.ssum
     def path(self):
         node = self
         while node is not None:
@@ -197,7 +250,7 @@ class Tree(object):
     def __repr__(self):
         leftc = "/" if self.left is not None else " "
         rightc = "\\" if self.right is not None else " "
-        return "Tree[{}]({}:{}:{})".format(self.depth,leftc,self.this,rightc)
+        return "Tree[depth={depth},sum={sum}]({}:{}:{})".format(leftc,self.this,rightc,depth=self.depth,sum=self.ssum)
 
 
             
@@ -229,11 +282,44 @@ def test_lookup(IOrth):
     for i in range(1,x_max-x_step):
         for j in range(i,x_max-x_step):
             check_ij(i,j)
-        #for j in range(0,i):
-            #check_ij(i,j)
+        for j in range(0,i):
+            check_ij(i,j)
 
 
+def test_count(IOrth):
+    x_max = 100
+    x_step = 3
+    nums = range(1,x_max,x_step)
+    nums_np = np.array(nums)
+    orth = IOrth(nums)
+    def check_ij(i,j):
+        np_res = np.sum(nums_np[(nums_np >= i) & (nums_np <= j)])
+        my_res = orth.count(i,j)
+
+        eq_test = np_res == my_res
+        if not eq_test:
+            print("x: [{} {}]".format(i,j))
+            print("Expected:")
+            print(np_res)
+            print("Got:")
+            print(my_res)
+        assert eq_test
+    for i in range(1,x_max-x_step):
+        for j in range(i,x_max-x_step):
+            check_ij(i,j)
+        for i2 in range(0,i):
+            check_ij(i2,j)
 
 test_succ()
 test_lookup(Orth)
 test_lookup(OrthTree)
+test_count(OrthTree)
+
+def test():
+    x_max = 100
+    x_step = 3
+    nums = range(1,x_max,x_step)
+    nums_np = np.array(nums)
+    orth = OrthTree(nums)
+    orth.count(2,20)
+
