@@ -1,30 +1,51 @@
-
+import numpy as np
 
 class Orth(object):
     """docstring for Orth"""
-    def __init__(self, arr):
-        self.arr = arr
+    def __init__(self, arr,is_sorted=False):
+        if is_sorted:
+            self.arr = arr
+        else:
+            self.arr = sorted(arr)
 
+    """
+    Lookup using the walking method
+    
+    Takes O(log(n) + k)
+    1) binary search to find successor
+    2) walk k (matches found) steps
+    """
     def lookup(self,x1,x2):
-        """
-        Lookup using the walking method
-        
-        Takes O(log(n) + k)
-        1) binary search to find successor
-        2) walk k (matches found) steps
-        """
         i = Orth.successor(self.arr,x1)
         nums = []
         while i < len(self.arr) and self.arr[i] <= x2:
             nums.append(self.arr[i])
             i += 1
         return nums
+    def count(self,x1,x2):
+        x1i = Orth.successor(self.arr,x1)
+        x2i = Orth.predecessor(self.arr,x2)
+        if x1i is None or x2i is None:
+            return 0
+        return x2i-x1i+1
+    def countn(self,M):
+        if len(M) == 1:
+            return self.count(*M[0])
+        else:
+            raise ValueError("1D Orth count can only operate on 1x2 M")
+
 
     @staticmethod
     def successor(nums,x):
         if x > max(nums):
             return None
         def successor_to(s,e):
+            if e == s == 0:
+                if nums[s] < x:
+                    return None
+                else:
+                    return s
+
             mid = int((s+e)/2)
             if nums[mid] == x:
                 return mid
@@ -35,16 +56,25 @@ class Orth(object):
             elif nums[mid] < x:
                 return successor_to(mid+1,e)
         return successor_to(0,len(nums))
+    @staticmethod
+    def predecessor(nums,x):
+        def predecessor_to(s,e):
+            if e == s == 0:
+                return None
 
-def test_succ():
-    nums = range(1,67,3)
-    for i in range(1,64):
-        successor_i = Orth.successor(nums,i)
-        successor = nums[successor_i]
-        previous = nums[successor_i-1]
-        if successor_i == 0:
-            continue
-        assert previous < successor, "{} vs {} [i={}]".format(previous,successor,successor_i)
+            mid = int((s+e)/2)
+            if nums[mid] == x:
+                return mid
+            elif nums[mid] > x:
+                return predecessor_to(s,mid)
+            elif nums[mid] < x:
+                if mid+1>=len(nums):
+                    return len(nums)-1
+                if nums[mid+1] > x:
+                    return mid
+                return predecessor_to(mid+1,e)
+        return predecessor_to(0,len(nums))
+
 
 class OrthTree(object):
     """docstring for OrthTree"""
@@ -77,6 +107,11 @@ class OrthTree(object):
 
         x1s, x2p = OrthTree.successor(self.tree,x1),OrthTree.predecessor(self.tree,x2)
         split = OrthTree.find_split(x1s,x2p) 
+        if x1s is x2p:
+            if f(x1s.this) and f(x2p.this):
+                return 1
+            else:
+                return 0
 
         ts = 0
         ts_x1 = get_tsum(split,x1s,f)
@@ -91,6 +126,11 @@ class OrthTree(object):
             if tree is split:
                 return 0
             tsum = 0
+            if len(M) == 1:
+                if tree.left is not None and f(tree.left):
+                    tsum += tree.left.ssum
+                if tree.right is not None and f(tree.right):
+                    tsum += tree.right.ssum
             off = None
             while True:
                 if f(tree):
@@ -117,7 +157,7 @@ class OrthTree(object):
         x1s, x2p = OrthTree.successor(self.tree,x1),OrthTree.predecessor(self.tree,x2)
         split = OrthTree.find_split(x1s,x2p) 
         if x1s is x2p:
-            if x1s.this >= x1 and x1s.this <= x2:
+            if f(x1s,n=1) and f(x2p,n=1):
                 if len(M) > 1:
                     return self.tree.thist.countn(M[1:])
                 else:
@@ -140,40 +180,39 @@ class OrthTree(object):
         def get_tsum(split,tree,f):
             if tree is split:
                 return 0
-            #nums = []
             tsum = 0
-
-            if tree.left is not None and f(tree.left):
-                tsum += tree.left.thist.count(y1,y2)
-                #tsum += tree.left.ssum
-            if tree.right is not None and f(tree.right):
-                tsum += tree.right.thist.count(y1,y2)
-                #tsum += tree.right.ssum
             off = None
             while True:
                 if f(tree):
-                    tsum += 1#tree.thist.count(y1,y2)
-                if off is not None and f(off):
+                    tsum += 1
+                if off is not None and f(off,n=1):
                     tsum += off.thist.count(y1,y2)
-                    #tsum += off.ssum
                 tree_old = tree
                 tree = tree.parent    
                 if tree is split:
                     break
                 off = OrthTree.find_offpath(tree,tree_old)
             return tsum
-        f = lambda t: t.this>=x1 and t.this<=x2 and t.thisn[0] >= y1 and t.thisn[0] <= y2
+        def f(t,n=None):
+            if n is None:
+                n = len(M)
+            a = all([p >= m[0] and p <= m[1] for p,m in zip(t.thisp,M[:n])])
+            return a
 
         x1s, x2p = OrthTree.successor(self.tree,x1),OrthTree.predecessor(self.tree,x2)
         split = OrthTree.find_split(x1s,x2p) 
 
+        if x1s is x2p:
+            if f(x1s,n=1) and f(x2p,n=1):
+                return self.tree.thist.count(y1,y2)
+            else:
+                return 0
         ts = 0
         ts_x1 = get_tsum(split,x1s,f)
         ts_x2 = get_tsum(split,x2p,f)
         ts += ts_x1
         if f(split):
             ts += 1
-            #ts += split.thist.count(y1,y2)
         ts += ts_x2
         return ts
 
@@ -295,26 +334,34 @@ class Tree(object):
         self.thisn = arr[mid_i][1:]
         self.dim = len(arr[mid_i])
         self.thisn = self.thisn.reshape((1,self.dim-1))
+
+        # assign left and right if they exist
         if mid_i > 0:
             self.left = Tree(arr[:mid_i,:],parent=self)
-            self.thisn = np.vstack([self.thisn,self.left.thisn])
         else:
             self.left = None
 
         if mid_i+1 < len(arr):
             self.right = Tree(arr[mid_i+1:,:],parent=self)
-            self.thisn = np.vstack([self.thisn,self.right.thisn])
         else:
             self.right = None
 
-        if self.dim > 1:
-            self.thist = OrthTree(self.thisn)
 
-        self.ssum = 1#self.this
+        self.ssum = 1
+
+        # store number of items and nx(d-1) tree
         if self.left is not None:
             self.ssum += self.left.ssum
+            self.thisn = np.vstack([self.thisn,self.left.thisn])
+            self.left.thisn = None
         if self.right is not None:
             self.ssum += self.right.ssum
+            self.thisn = np.vstack([self.thisn,self.right.thisn])
+            self.right.thisn = None
+        if self.dim == 2:
+            self.thist = Orth(self.thisn[:,0],is_sorted=True)
+        elif self.dim >= 3:
+            self.thist = OrthTree(self.thisn)
     def path(self):
         node = self
         while node is not None:
@@ -337,112 +384,5 @@ class Tree(object):
         leftc = "/" if self.left is not None else " "
         rightc = "\\" if self.right is not None else " "
         return "Tree[depth={depth},sum={sum},dim={dim}]({}:{}:{})".format(leftc,self.this,rightc,depth=self.depth,sum=self.ssum,dim=self.dim)
-
-
-import numpy as np
-def test_lookup(IOrth):
-    x_max = 100
-    x_step = 3
-    nums = range(1,x_max,x_step)
-    nums_np = np.array(nums)
-    orth = IOrth(nums)
-    def check_ij(i,j):
-        np_res = nums_np[(nums_np >= i) & (nums_np <= j)]
-        my_res = np.array(orth.lookup(i,j))
-
-        len_test = len(np_res) == len(my_res)
-        eq_test = len_test and all(np_res == my_res)
-        if not (len_test and eq_test):
-            print("x: [{} {}]".format(i,j))
-            print("Expected:")
-            print(np_res)
-            print("Got:")
-            print(my_res)
-        assert len_test, "len: {} vs {}".format(len(np_res),len(my_res))
-        assert eq_test
-    for i in range(1,x_max-x_step):
-        for j in range(i,x_max-x_step):
-            check_ij(i,j)
-        for j in range(0,i):
-            check_ij(i,j)
-
-
-def test_count(IOrth):
-    x_max = 100
-    x_step = 3
-    nums = range(1,x_max,x_step)
-    nums_np = np.array(nums)
-    orth = IOrth(nums)
-    def check_ij(i,j):
-        np_res = len(nums_np[(nums_np >= i) & (nums_np <= j)])
-        my_res = orth.count(i,j)
-
-        eq_test = np_res == my_res
-        if not eq_test:
-            print("x: [{} {}]".format(i,j))
-            print("Expected:")
-            print(np_res)
-            print("Got:")
-            print(my_res)
-        assert eq_test
-    for i in range(1,x_max-x_step):
-        for j in range(i,x_max-x_step):
-            check_ij(i,j)
-        for i2 in range(0,i):
-            check_ij(i2,j)
-
-
-from itertools import combinations
-def test_countn(IOrth,n):
-    x_max = 100
-    x_step = 3
-    nums = np.vstack([np.arange(1,x_max,x_step)+x_max*i for i in range(n)])
-    nums = nums.transpose()
-    #nums_np = np.array(nums)
-    orth = IOrth(nums)
-    def npc2(M):
-        ms = [(nums[:,i] >= M[i][0]) & (nums[:,i] <= M[i][1]) for i in range(len(M))]
-        m = np.bitwise_and.reduce(ms)
-        #print(nums[m])
-        return sum(m)
-    m = 12
-    #print(npc2(2*100,20*100,2,m))
-    #print(orth.count2(2*100,20*100,2,m))
-    #combos = list(combinations(np.arange(0,x_max,4),2))
-    combos = [[0,100],[50+100,100+100],[20+200,60+200],[355,357]]
-
-    #import pdb; pdb.set_trace()
-    comboss = combinations(combos,n)
-    #import pdb; pdb.set_trace()
-    #import pdb; pdb.set_trace()
-    #comboss.append([[0,10],[2,1000]])
-    ress = []
-
-    for M in comboss:
-        #res = orth.count2(x1,x2,y1,y2)
-        #print(["{} <= xn <= {}".format(m[0],m[1]) for m in M])
-        expected = npc2(M)
-        #print(expected)
-        res = orth.countn(M)
-        ress.append((res,expected))
-        if res != expected:
-            print("M:")
-            print(["{} <= xn <= {}".format(m[0],m[1]) for m in M])
-            print("{} vs {}".format(res,expected))
-        assert res == expected
-    print(ress)
-    #import pdb; pdb.set_trace()
-
-    #for x1,x2 in combos:
-        #for y1,y2 in combos2:
-
-#test_succ()
-#test_lookup(Orth)
-#test_lookup(OrthTree)
-#test_count(OrthTree)
-#test_count2(OrthTree)
-test_countn(OrthTree,2)
-test_countn(OrthTree,3)
-test_countn(OrthTree,4)
 
 
