@@ -1,5 +1,9 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import numpy as np
 from orth import Orth, OrthTree
+from itertools import combinations
 
 
 def test_lookup(IOrth):
@@ -55,9 +59,6 @@ def test_count(IOrth):
             check_ij(i, j)
         for i2 in range(0, i):
             check_ij(i2, j)
-
-
-from itertools import combinations
 
 
 def test_countn(IOrth, n):
@@ -137,13 +138,18 @@ def test_pred(IOrth):
     pred_post = IOrth.predecessor(nums, max(nums)+1)
     assert pred_post == len(nums)-1, "actual: {}".format(pred_post)
 
-test_succ(Orth)
-test_pred(Orth)
-#  test_lookup(Orth)
-#  test_lookup(OrthTree)
-test_count(Orth)
-#  test_count(OrthTree)
-test_countn(OrthTree, 1)
-test_countn(OrthTree, 2)
-test_countn(OrthTree, 3)
-test_countn(OrthTree, 4)
+
+def main():
+    test_succ(Orth)
+    test_pred(Orth)
+    test_lookup(Orth)
+    test_lookup(OrthTree)
+    test_count(Orth)
+    test_count(OrthTree)
+    test_countn(OrthTree, 1)
+    test_countn(OrthTree, 2)
+    test_countn(OrthTree, 3)
+    test_countn(OrthTree, 4)
+
+if __name__ == "__main__":
+    main()
