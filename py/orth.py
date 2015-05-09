@@ -4,7 +4,7 @@ import operator
 
 class Orth(object):
 
-    """docstring for Orth"""
+    """1D array orthogonal range structure"""
 
     def __init__(self, arr, is_sorted=False):
         if is_sorted:
@@ -86,7 +86,7 @@ class Orth(object):
 
 class OrthTree(object):
 
-    """docstring for OrthTree"""
+    """d-dimensional orthogonal range structure"""
 
     def __init__(self, arr):
         self.tree = Tree(arr)
@@ -343,7 +343,7 @@ class OrthTree(object):
 
 class Tree(object):
 
-    """docstring for Tree"""
+    """Tree for the d-dimensional orthogonal range structure"""
 
     def __init__(self, arr, parent=None):
         if not isinstance(arr, np.ndarray):
@@ -398,9 +398,6 @@ class Tree(object):
 
         if self.dim == 2:
             nnums = [p[0] for p in self.thisn]
-            # TODO: disable for non-debugging version
-            #assert nnums == sorted(nnums)
-            assert nnums == sorted(nnums)
             self.thist = Orth(nnums, is_sorted=True)
         elif self.dim >= 3:
             self.thist = OrthTree(self.thisn)
