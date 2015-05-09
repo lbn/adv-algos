@@ -1,4 +1,5 @@
 import numpy as np
+import operator
 
 
 class Orth(object):
@@ -392,8 +393,13 @@ class Tree(object):
                 self.thisn.append(point)
             self.right.thisn = None
 
+        if self.dim > 1:
+            self.thisn = sorted(self.thisn, key=operator.itemgetter(0))
+
         if self.dim == 2:
             nnums = [p[0] for p in self.thisn]
+            # TODO: disable for non-debugging version
+            #assert nnums == sorted(nnums)
             assert nnums == sorted(nnums)
             self.thist = Orth(nnums, is_sorted=True)
         elif self.dim >= 3:

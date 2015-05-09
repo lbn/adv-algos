@@ -61,6 +61,11 @@ def test_count(IOrth):
             check_ij(i2, j)
 
 
+def test_count2(IOrth):
+    nums = list(zip(range(10), range(10)[::-1]))
+    t = OrthTree(nums)
+
+
 def test_countn(IOrth, n):
     x_max = 100
     x_step = 3
@@ -146,6 +151,7 @@ def main():
     test_lookup(OrthTree)
     test_count(Orth)
     test_count(OrthTree)
+    test_count2(OrthTree)
     test_countn(OrthTree, 1)
     test_countn(OrthTree, 2)
     test_countn(OrthTree, 3)
